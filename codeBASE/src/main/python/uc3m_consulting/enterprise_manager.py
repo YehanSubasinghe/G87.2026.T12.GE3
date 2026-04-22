@@ -17,6 +17,28 @@ class EnterpriseManager:
         pass
 
     @staticmethod
+    def _compute_cif_control_digit(middle_digits: str) -> int:
+        """Computes the expected CIF control digit from the 7 middle digits."""
+        odd_pos_sum = 0
+        even_pos_sum = 0
+        for i in range(len(middle_digits)):
+            if i % 2 == 0:
+                doubled = int(middle_digits[i]) * 2
+                if doubled > 9:
+                    odd_pos_sum = odd_pos_sum + (doubled // 10) + (doubled % 10)
+                else:
+                    odd_pos_sum = odd_pos_sum + doubled
+            else:
+                even_pos_sum = even_pos_sum + int(middle_digits[i])
+
+        total = odd_pos_sum + even_pos_sum
+        total_last_digit = total % 10
+        expected_control = 10 - total_last_digit
+        if expected_control == 10:
+            expected_control = 0
+        return expected_control
+
+    @staticmethod
     def validate_cif(cif: str):
         """validates a cif number """
         if not isinstance(cif, str):
