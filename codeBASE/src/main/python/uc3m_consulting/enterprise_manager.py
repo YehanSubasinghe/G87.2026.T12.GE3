@@ -1,4 +1,4 @@
-"""Module """
+"""Module for managing enterprise projects and document reports."""
 import re
 import json
 

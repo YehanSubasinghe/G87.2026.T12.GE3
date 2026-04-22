@@ -1,9 +1,9 @@
-"""Contains the class OrderShipping"""
+"""Contains the class ProjectDocument"""
 from datetime import datetime, timezone
 import hashlib
 
 class ProjectDocument():
-    """Class representing the information required for shipping of an order"""
+    """Class representing the information required for a project"""
 
     def __init__(self, project_id: str, file_name):
         self.__alg = "SHA-256"
@@ -23,14 +23,14 @@ class ProjectDocument():
                 "document_signature": self.document_signature}
 
     def __signature_string(self):
-        """Composes the string to be used for generating the key for the date"""
+        """Composes the string to be used for generating the document signature"""
         return "{alg:" + str(self.__alg) +",typ:" + str(self.__type) +",project_id:" + \
                str(self.__project_id) + ",file_name:" + str(self.__file_name) + \
                ",register_date:" + str(self.__register_date) + "}"
 
     @property
     def project_id(self):
-        """Property that represents the product_id of the patient"""
+        """Property that represents the project identifier this document belongs to"""
         return self.__project_id
 
     @project_id.setter
@@ -39,7 +39,7 @@ class ProjectDocument():
 
     @property
     def file_name(self):
-        """Property that represents the order_id"""
+        """Property that represents the document's file name"""
         return self.__file_name
     @file_name.setter
     def file_name(self, value):
@@ -47,7 +47,7 @@ class ProjectDocument():
 
     @property
     def register_date(self):
-        """Property that represents the phone number of the client"""
+        """Property that represents the timestamp when the document was registered"""
         return self.__register_date
     @register_date.setter
     def register_date(self, value):
@@ -56,5 +56,5 @@ class ProjectDocument():
 
     @property
     def document_signature(self):
-        """Returns the sha256 signature of the date"""
+        """Returns the sha256 signature of the document"""
         return hashlib.sha256(self.__signature_string().encode()).hexdigest()
