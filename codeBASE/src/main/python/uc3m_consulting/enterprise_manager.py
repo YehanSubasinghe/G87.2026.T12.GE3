@@ -51,25 +51,7 @@ class EnterpriseManager:
         middle_digits = cif[1:8]
         control_char = cif[8]
 
-        odd_pos_sum = 0
-        even_pos_sum = 0
-
-        for i in range(len(middle_digits)):
-            if i % 2 == 0:
-                doubled = int(middle_digits[i]) * 2
-                if doubled > 9:
-                    odd_pos_sum = odd_pos_sum + (doubled // 10) + (doubled % 10)
-                else:
-                    odd_pos_sum = odd_pos_sum + doubled
-            else:
-                even_pos_sum = even_pos_sum + int(middle_digits[i])
-
-        total = odd_pos_sum + even_pos_sum
-        total_last_digit = total % 10
-        expected_control = 10 - total_last_digit
-
-        if expected_control == 10:
-            expected_control = 0
+        expected_control = EnterpriseManager._compute_cif_control_digit(middle_digits)
 
         control_letter_map = "JABCDEFGHI"
 
@@ -102,32 +84,30 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Invalid date format")
         return starting_date
 
-    #pylint: disable=too-many-arguments, too-many-positional-arguments
-    def register_project(self,
-                         company_cif: str,
-                         project_acronym: str,
-                         project_description: str,
-                         department: str,
-                         date: str,
-                         budget: str):
-        """registers a new project"""
-        self.validate_cif(company_cif)
+    @staticmethod
+    def _validate_acronym(project_acronym: str):
+        """Validates the project acronym format."""
         acronym_pattern = re.compile(r"^[a-zA-Z0-9]{5,10}")
-        acronym_match = acronym_pattern.fullmatch(project_acronym)
-        if not acronym_match:
+        if not acronym_pattern.fullmatch(project_acronym):
             raise EnterpriseManagementException("Invalid acronym")
+
+    @staticmethod
+    def _validate_description(project_description: str):
+        """Validates the project description format."""
         description_pattern = re.compile(r"^.{10,30}$")
-        description_match = description_pattern.fullmatch(project_description)
-        if not description_match:
+        if not description_pattern.fullmatch(project_description):
             raise EnterpriseManagementException("Invalid description format")
 
+    @staticmethod
+    def _validate_department(department: str):
+        """Validates the department name."""
         department_pattern = re.compile(r"(HR|FINANCE|LEGAL|LOGISTICS)")
-        department_match = department_pattern.fullmatch(department)
-        if not department_match:
+        if not department_pattern.fullmatch(department):
             raise EnterpriseManagementException("Invalid department")
 
-        self.validate_starting_date(date)
-
+    @staticmethod
+    def _validate_budget(budget):
+        """Validates the budget value format and range."""
         try:
             budget_value = float(budget)
         except ValueError as exc:
@@ -142,6 +122,21 @@ class EnterpriseManager:
         if budget_value < 50000 or budget_value > 1000000:
             raise EnterpriseManagementException("Invalid budget amount")
 
+    #pylint: disable=too-many-arguments, too-many-positional-arguments
+    def register_project(self,
+                         company_cif: str,
+                         project_acronym: str,
+                         project_description: str,
+                         department: str,
+                         date: str,
+                         budget: str):
+        """registers a new project"""
+        self.validate_cif(company_cif)
+        self._validate_acronym(project_acronym)
+        self._validate_description(project_description)
+        self._validate_department(department)
+        self.validate_starting_date(date)
+        self._validate_budget(budget)
 
         new_project = EnterpriseProject(company_cif=company_cif,
                                         project_acronym=project_acronym,
@@ -172,6 +167,7 @@ class EnterpriseManager:
         except json.JSONDecodeError as ex:
             raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
         return new_project.project_id
+
 
     def find_docs(self, date_str):
         """
