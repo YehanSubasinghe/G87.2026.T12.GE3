@@ -39,6 +39,21 @@ class EnterpriseManager:
         return expected_control
 
     @staticmethod
+    def _validate_date_format(date_str: str):
+        """Validates that a date string matches dd/mm/yyyy format and is parseable.
+
+        Returns the parsed date object on success.
+        Raises EnterpriseManagementException with 'Invalid date format' otherwise.
+        """
+        date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
+        if not date_pattern.fullmatch(date_str):
+            raise EnterpriseManagementException("Invalid date format")
+        try:
+            return datetime.strptime(date_str, "%d/%m/%Y").date()
+        except ValueError as ex:
+            raise EnterpriseManagementException("Invalid date format") from ex
+
+    @staticmethod
     def validate_cif(cif: str):
         """validates a cif number """
         if not isinstance(cif, str):
@@ -67,15 +82,7 @@ class EnterpriseManager:
 
     def validate_starting_date(self, starting_date: str):
         """validates the  date format  using regex"""
-        date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
-        match_result = date_pattern.fullmatch(starting_date)
-        if not match_result:
-            raise EnterpriseManagementException("Invalid date format")
-
-        try:
-            my_date = datetime.strptime(starting_date, "%d/%m/%Y").date()
-        except ValueError as ex:
-            raise EnterpriseManagementException("Invalid date format") from ex
+        my_date = self._validate_date_format(starting_date)
 
         if my_date < datetime.now(timezone.utc).date():
             raise EnterpriseManagementException("Project's date must be today or later.")
@@ -185,15 +192,7 @@ class EnterpriseManager:
             EnterpriseManagementException: On invalid date, file IO errors,
                 missing data, or cryptographic integrity failure.
         """
-        date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
-        match_result = date_pattern.fullmatch(date_str)
-        if not match_result:
-            raise EnterpriseManagementException("Invalid date format")
-
-        try:
-            my_date = datetime.strptime(date_str, "%d/%m/%Y").date()
-        except ValueError as ex:
-            raise EnterpriseManagementException("Invalid date format") from ex
+        self._validate_date_format(date_str)
 
         # open documents
         try:
