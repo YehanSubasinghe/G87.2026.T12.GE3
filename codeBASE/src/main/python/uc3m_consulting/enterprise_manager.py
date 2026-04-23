@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 from freezegun import freeze_time
 from uc3m_consulting.enterprise_project import EnterpriseProject
 from uc3m_consulting.enterprise_management_exception import EnterpriseManagementException
-from uc3m_consulting.enterprise_manager_config import (PROJECTS_STORE_FILE,
-                                                       TEST_DOCUMENTS_STORE_FILE,
+from uc3m_consulting.enterprise_manager_config import (TEST_DOCUMENTS_STORE_FILE,
                                                        TEST_NUMDOCS_STORE_FILE)
 from uc3m_consulting.project_document import ProjectDocument
+from uc3m_consulting.projects_json_store import ProjectsJsonStore
 
 class EnterpriseManager:
     """Class for providing the methods for managing the orders"""
@@ -179,14 +179,8 @@ class EnterpriseManager:
                                         starting_date=date,
                                         project_budget=budget)
 
-        projects_list = self._read_json_file(PROJECTS_STORE_FILE, default_if_missing=[])
-
-        for existing_project in projects_list:
-            if existing_project == new_project.to_json():
-                raise EnterpriseManagementException("Duplicated project in projects list")
-
-        projects_list.append(new_project.to_json())
-        self._write_json_file(PROJECTS_STORE_FILE, projects_list)
+        projects_store = ProjectsJsonStore()
+        projects_store.add_project(new_project.to_json())
         return new_project.project_id
 
     @staticmethod
