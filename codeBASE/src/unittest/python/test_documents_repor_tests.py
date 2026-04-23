@@ -38,7 +38,7 @@ class TestDocumentsReporTest(TestCase):
         """validates a valid case with a valid date finding documents
         and updating the numdocs_store.json file"""
         mngr = EnterpriseManager()
-        res = mngr.find_docs("05/04/2026")
+        res = mngr.generate_documents_report("05/04/2026")
         self.assertEqual(2,res)
         data = self.read_file()
         data_found = False
@@ -61,7 +61,7 @@ class TestDocumentsReporTest(TestCase):
             hash_original = ""
 
         with self.assertRaises(EnterpriseManagementException) as cm_obj:
-            mngr.find_docs("/04/2026")
+            mngr.generate_documents_report("/04/2026")
         self.assertEqual("Invalid date format",cm_obj.exception.message)
 
         if os.path.isfile(TEST_NUMDOCS_STORE_FILE):
@@ -83,7 +83,7 @@ class TestDocumentsReporTest(TestCase):
             hash_original = ""
 
         with self.assertRaises(EnterpriseManagementException) as cm_obj:
-            mngr.find_docs("01/04/2025")
+            mngr.generate_documents_report("01/04/2025")
         self.assertEqual("No documents found",cm_obj.exception.message)
 
         if os.path.isfile(TEST_NUMDOCS_STORE_FILE):
