@@ -21,15 +21,15 @@ class EnterpriseManager:
         """Computes the expected CIF control digit from the 7 middle digits."""
         odd_pos_sum = 0
         even_pos_sum = 0
-        for i in range(len(middle_digits)):
+        for i, digit_char in enumerate(middle_digits):
             if i % 2 == 0:
-                doubled = int(middle_digits[i]) * 2
+                doubled = int(digit_char) * 2
                 if doubled > 9:
                     odd_pos_sum = odd_pos_sum + (doubled // 10) + (doubled % 10)
                 else:
                     odd_pos_sum = odd_pos_sum + doubled
             else:
-                even_pos_sum = even_pos_sum + int(middle_digits[i])
+                even_pos_sum = even_pos_sum + int(digit_char)
 
         total = odd_pos_sum + even_pos_sum
         total_last_digit = total % 10
