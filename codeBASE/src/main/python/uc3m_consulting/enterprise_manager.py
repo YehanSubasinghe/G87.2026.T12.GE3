@@ -11,7 +11,18 @@ from uc3m_consulting.documents_json_store import DocumentsJsonStore
 from uc3m_consulting.reports_json_store import ReportsJsonStore
 
 class EnterpriseManager:
-    """Class for providing the methods for managing the orders"""
+    """Class for providing the methods for managing the orders.
+
+    Implements the Singleton pattern: only one instance of EnterpriseManager
+    can exist. All calls to EnterpriseManager() return the same instance.
+    """
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
         pass
 
