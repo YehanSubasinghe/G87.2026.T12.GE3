@@ -175,26 +175,15 @@ class EnterpriseManager:
             raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
         return new_project.project_id
 
-    def generate_documents_report(self, date_str):
+    @staticmethod
+    def _count_documents_for_date(date_str: str) -> int:
+        """Counts documents registered on the given date, verifying their signatures.
+
+        Reads the documents store file and, for each entry whose register_date
+        falls on date_str, rebuilds the ProjectDocument (under a frozen clock
+        matching the original timestamp) and compares signatures. Raises if any
+        signature mismatches; returns the count of valid documents found.
         """
-        Generates a JSON report counting valid documents for a specific date.
-
-        Checks cryptographic hashes and timestamps to ensure historical data integrity.
-        Saves the output to 'resultado.json'.
-
-        Args:
-            date_str (str): date to query.
-
-        Returns:
-            number of documents found if report is successfully generated and saved.
-
-        Raises:
-            EnterpriseManagementException: On invalid date, file IO errors,
-                missing data, or cryptographic integrity failure.
-        """
-        self._validate_date_format(date_str)
-
-        # open documents
         try:
             with open(TEST_DOCUMENTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
                 documents_list = json.load(file)
@@ -202,36 +191,26 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
 
         documents_found = 0
-
-        # loop to find
         for document_entry in documents_list:
             timestamp = document_entry["register_date"]
-
-            # string conversion for easy match
             document_date_str = datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y")
+            if document_date_str != date_str:
+                continue
+            document_datetime = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            with freeze_time(document_datetime):
+                rebuilt_document = ProjectDocument(document_entry["project_id"],
+                                                   document_entry["file_name"])
+                if rebuilt_document.document_signature != document_entry["document_signature"]:
+                    raise EnterpriseManagementException("Inconsistent document signature")
+                documents_found = documents_found + 1
+        return documents_found
 
-            if document_date_str == date_str:
-                document_datetime = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                with freeze_time(document_datetime):
-                    # check the project id (thanks to freezetime)
-                    # if project_id are different then the data has been
-                    # manipulated
-                    rebuilt_document = ProjectDocument(document_entry["project_id"],
-                                                       document_entry["file_name"])
-                    if rebuilt_document.document_signature == document_entry["document_signature"]:
-                        documents_found = documents_found + 1
-                    else:
-                        raise EnterpriseManagementException("Inconsistent document signature")
-
-        if documents_found == 0:
-            raise EnterpriseManagementException("No documents found")
-        # prepare json text
-        report_timestamp = datetime.now(timezone.utc).timestamp()
+    @staticmethod
+    def _append_report_entry(date_str: str, documents_found: int):
+        """Appends a new report entry to the reports store file."""
         report_entry = {"Querydate": date_str,
-                        "ReportDate": report_timestamp,
-                        "Numfiles": documents_found
-                        }
-
+                        "ReportDate": datetime.now(timezone.utc).timestamp(),
+                        "Numfiles": documents_found}
         try:
             with open(TEST_NUMDOCS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
                 reports_list = json.load(file)
@@ -245,4 +224,27 @@ class EnterpriseManager:
                 json.dump(reports_list, file, indent=2)
         except FileNotFoundError as ex:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
+
+    def generate_documents_report(self, date_str):
+        """
+        Generates a JSON report counting valid documents for a specific date.
+
+        Validates the date, counts matching documents (checking cryptographic
+        signatures for integrity), and appends a report entry to the store.
+
+        Args:
+            date_str (str): date to query, in dd/mm/yyyy format.
+
+        Returns:
+            int: number of documents found.
+
+        Raises:
+            EnterpriseManagementException: On invalid date, file IO errors,
+                missing data, or cryptographic integrity failure.
+        """
+        self._validate_date_format(date_str)
+        documents_found = self._count_documents_for_date(date_str)
+        if documents_found == 0:
+            raise EnterpriseManagementException("No documents found")
+        self._append_report_entry(date_str, documents_found)
         return documents_found
