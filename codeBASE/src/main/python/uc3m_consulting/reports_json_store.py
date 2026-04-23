@@ -5,7 +5,17 @@ from uc3m_consulting.enterprise_manager_config import TEST_NUMDOCS_STORE_FILE
 
 
 class ReportsJsonStore:
-    """Persistence layer for documents-count reports, backed by a JSON file."""
+    """Persistence layer for documents-count reports, backed by a JSON file.
+
+    Implements the Singleton pattern: only one instance exists. All calls
+    to ReportsJsonStore() return the same instance.
+    """
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
         self._file_path = TEST_NUMDOCS_STORE_FILE

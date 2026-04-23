@@ -5,7 +5,17 @@ from uc3m_consulting.enterprise_manager_config import PROJECTS_STORE_FILE
 
 
 class ProjectsJsonStore:
-    """Persistence layer for enterprise projects, backed by a JSON file."""
+    """Persistence layer for enterprise projects, backed by a JSON file.
+
+    Implements the Singleton pattern: only one instance exists. All calls
+    to ProjectsJsonStore() return the same instance.
+    """
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
         self._file_path = PROJECTS_STORE_FILE

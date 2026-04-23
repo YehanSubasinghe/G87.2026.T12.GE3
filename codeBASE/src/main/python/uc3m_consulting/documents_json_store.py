@@ -5,7 +5,17 @@ from uc3m_consulting.enterprise_manager_config import TEST_DOCUMENTS_STORE_FILE
 
 
 class DocumentsJsonStore:
-    """Persistence layer for registered documents, backed by a JSON file."""
+    """Persistence layer for registered documents, backed by a JSON file.
+
+    Implements the Singleton pattern: only one instance exists. All calls
+    to DocumentsJsonStore() return the same instance.
+    """
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self):
         self._file_path = TEST_DOCUMENTS_STORE_FILE
