@@ -1,15 +1,14 @@
 """Module for managing enterprise projects and document reports."""
 import re
-import json
 
 from datetime import datetime, timezone
 from freezegun import freeze_time
 from uc3m_consulting.enterprise_project import EnterpriseProject
 from uc3m_consulting.enterprise_management_exception import EnterpriseManagementException
-from uc3m_consulting.enterprise_manager_config import (TEST_DOCUMENTS_STORE_FILE,
-                                                       TEST_NUMDOCS_STORE_FILE)
 from uc3m_consulting.project_document import ProjectDocument
 from uc3m_consulting.projects_json_store import ProjectsJsonStore
+from uc3m_consulting.documents_json_store import DocumentsJsonStore
+from uc3m_consulting.reports_json_store import ReportsJsonStore
 
 class EnterpriseManager:
     """Class for providing the methods for managing the orders"""
@@ -52,33 +51,6 @@ class EnterpriseManager:
             return datetime.strptime(date_str, "%d/%m/%Y").date()
         except ValueError as ex:
             raise EnterpriseManagementException("Invalid date format") from ex
-
-    @staticmethod
-    def _read_json_file(file_path: str, default_if_missing=None):
-        """Reads a JSON file and returns its parsed content.
-
-        If default_if_missing is provided, a missing file returns that default;
-        otherwise, a missing file raises EnterpriseManagementException.
-        A malformed JSON always raises EnterpriseManagementException.
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8", newline="") as file:
-                return json.load(file)
-        except FileNotFoundError as ex:
-            if default_if_missing is not None:
-                return default_if_missing
-            raise EnterpriseManagementException("Wrong file or file path") from ex
-        except json.JSONDecodeError as ex:
-            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
-
-    @staticmethod
-    def _write_json_file(file_path: str, data):
-        """Writes the given data to a JSON file with indent=2 formatting."""
-        try:
-            with open(file_path, "w", encoding="utf-8", newline="") as file:
-                json.dump(data, file, indent=2)
-        except FileNotFoundError as ex:
-            raise EnterpriseManagementException("Wrong file or file path") from ex
 
     @staticmethod
     def validate_cif(cif: str):
@@ -187,12 +159,13 @@ class EnterpriseManager:
     def _count_documents_for_date(date_str: str) -> int:
         """Counts documents registered on the given date, verifying their signatures.
 
-        Reads the documents store file and, for each entry whose register_date
-        falls on date_str, rebuilds the ProjectDocument (under a frozen clock
-        matching the original timestamp) and compares signatures. Raises if any
-        signature mismatches; returns the count of valid documents found.
+        Reads the documents store and, for each entry whose register_date falls
+        on date_str, rebuilds the ProjectDocument (under a frozen clock matching
+        the original timestamp) and compares signatures. Raises if any signature
+        mismatches; returns the count of valid documents found.
         """
-        documents_list = EnterpriseManager._read_json_file(TEST_DOCUMENTS_STORE_FILE)
+        documents_store = DocumentsJsonStore()
+        documents_list = documents_store.load_documents()
 
         documents_found = 0
         for document_entry in documents_list:
@@ -211,14 +184,12 @@ class EnterpriseManager:
 
     @staticmethod
     def _append_report_entry(date_str: str, documents_found: int):
-        """Appends a new report entry to the reports store file."""
-        report_entry = {"Querydate": date_str,
+        """Appends a new report entry to the reports store."""
+        report_entry = {"Querydate":  date_str,
                         "ReportDate": datetime.now(timezone.utc).timestamp(),
                         "Numfiles": documents_found}
-        reports_list = EnterpriseManager._read_json_file(TEST_NUMDOCS_STORE_FILE,
-                                                         default_if_missing=[])
-        reports_list.append(report_entry)
-        EnterpriseManager._write_json_file(TEST_NUMDOCS_STORE_FILE, reports_list)
+        reports_store = ReportsJsonStore()
+        reports_store.append_report(report_entry)
 
     def generate_documents_report(self, date_str):
         """
